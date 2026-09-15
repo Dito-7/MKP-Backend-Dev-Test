@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: mkp_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: mkp_cinema
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/01_init_schema.sql:ro
+      - ./database/seeds/000001_seed_data.sql:/docker-entrypoint-initdb.d/02_seed_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mkp_cinema"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mkp_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mkp_cinema_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: production
+      APP_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: mkp_cinema
+      DB_SSLMODE: disable
+      JWT_SECRET: mkp-super-secret-jwt-key-2025-secure-token!
+      JWT_EXPIRES_HOUR: 24
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:

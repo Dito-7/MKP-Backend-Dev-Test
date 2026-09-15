@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     table_name VARCHAR(50) NOT NULL,
     record_id UUID NOT NULL,
     action VARCHAR(20) NOT NULL,
-    actor_id UUID,
+    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     old_data JSONB,
     new_data JSONB,
     ip_address VARCHAR(45),
